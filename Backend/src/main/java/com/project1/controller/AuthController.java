@@ -121,4 +121,16 @@ public class AuthController {
                     .body(new ResponseData<>(HttpStatus.UNAUTHORIZED.value(), "Đăng nhập hết hạn!"));
         }
     }
+
+    @Operation(summary = "Logout")
+    @PostMapping(value = "/logout")
+    public ResponseEntity<ResponseData<LoginResponeDTO>> logout(HttpServletRequest request,
+            HttpServletResponse response) {
+
+        ResponseData<LoginResponeDTO> responseData = authService.logout(request, response);
+
+        return ResponseEntity.status(responseData.getStatus())
+                .body(new ResponseData<>(responseData.getStatus(), responseData.getMessage()));
+
+    }
 }

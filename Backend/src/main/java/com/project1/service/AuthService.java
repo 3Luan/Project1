@@ -27,6 +27,7 @@ import com.project1.util.EmailService;
 
 import lombok.extern.slf4j.Slf4j;
 import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.*;
 import java.time.Instant;
@@ -160,6 +161,7 @@ public class AuthService {
         return RandomStringUtils.randomAlphanumeric(6).toUpperCase(); // Tạo mã 6 ký tự ngẫu nhiên
     }
 
+    // VerifyCode
     public ResponseData<LoginResponeDTO> verifyCode(VerifyCodeAndRegisterRequestDTO verifyCodeAndRegisterRequestDTO,
             HttpServletResponse response) {
         // Kiểm tra thông tin đầu vào
@@ -247,4 +249,33 @@ public class AuthService {
 
         return Optional.empty(); // Trả về empty nếu không tìm thấy hoặc password sai
     }
+
+    // Logout
+    public ResponseData<LoginResponeDTO> logout(HttpServletRequest request, HttpServletResponse response) {
+        // Tìm cookie có tên là "token"
+        Cookie[] cookies = request.getCookies();
+        boolean cookieFound = false;
+
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if ("token".equals(cookie.getName())) {
+                    // Nếu tìm thấy cookie, xóa cookie
+                    cookie.setValue(null); // Xóa giá trị của cookie
+                    cookie.setPath("/"); // Đặt đường dẫn cookie
+                    cookie.setMaxAge(0); // Đặt thời gian sống của cookie thành 0 để xóa
+                    response.addCookie(cookie); // Thêm cookie đã xóa vào phản hồi
+                    cookieFound = true;
+                    break; // Dừng vòng lặp nếu đã tìm thấy và xóa cookie
+                }
+            }
+        }
+
+        if (cookieFound) {
+            return new ResponseData<LoginResponeDTO>(HttpStatus.OK.value(), "Đăng xuất thành công!");
+        } else {
+            return new ResponseData<LoginResponeDTO>(HttpStatus.BAD_REQUEST.value(),
+                    "Không có phiên đăng nhập nào để đăng xuất.");
+        }
+    }
+
 }

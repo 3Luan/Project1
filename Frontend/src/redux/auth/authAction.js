@@ -92,22 +92,19 @@ export const handleUpdateProfile = () => {
 
 export const handleLogout = (navigate) => {
   return async (dispatch, getState) => {
-    dispatch(logout());
+    try {
+      dispatch(logout());
 
-    let res = await logoutAPI();
+      let res = await logoutAPI();
 
-    if (res) {
-      if (res.code === 0) {
-        toast.success(res.message);
-        dispatch(logoutSuccess());
-        // Use history object to navigate
-        navigate("/login");
-      } else if (res.code === 1) {
-        toast.error(res.message);
-        dispatch(logoutError());
-      }
-    } else {
+      // Logout thành công
+      dispatch(logoutSuccess(res?.data?.user));
+      navigate("/login");
+      toast.success(res?.message);
+    } catch (error) {
+      // Logout thất bại
       dispatch(logoutError());
+      toast.error(error?.response?.data?.message);
     }
   };
 };

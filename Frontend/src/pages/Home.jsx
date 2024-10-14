@@ -21,9 +21,9 @@ const Home = () => {
   const navigate = useNavigate();
   const [keywordSearch, setKeywordSearch] = useState("");
 
-  // useEffect(() => {
-  //   dispatch(handleGetNotificationPost());
-  // }, [location.pathname]);
+  useEffect(() => {
+    dispatch(handleGetNotificationPost());
+  }, [location.pathname]);
 
   const handlePageClick = (selectedPage) => {
     setCurrentPage(selectedPage.selected);

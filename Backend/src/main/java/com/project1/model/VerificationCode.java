@@ -29,6 +29,6 @@ public class VerificationCode {
     public VerificationCode(String email, String code) {
         this.email = email;
         this.code = code;
-        this.createdAt = new Date(); // Gán thời gian hiện tại khi khởi tạo
+        this.createdAt = new Date();
     }
 }

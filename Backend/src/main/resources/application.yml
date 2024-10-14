@@ -5,6 +5,6 @@ spring:
 openapi:
   service:
     api-docs: api-service
-    server: http://localhost:8080/api
+    server: http://localhost:8080
     title: API Service
     version: 1.0.0

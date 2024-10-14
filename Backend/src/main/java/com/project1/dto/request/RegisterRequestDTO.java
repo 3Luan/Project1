@@ -27,6 +27,6 @@ public class RegisterRequestDTO implements Serializable {
     @NotBlank(message = "Giới tính không được bỏ trống")
     private String gender;
 
-    @NotBlank(message = "Ngày sinh không được bỏ trống")
-    private Date birth;
+    // @NotBlank(message = "Ngày sinh không được bỏ trống")
+    // private Date birth;
 }

@@ -6,6 +6,8 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import com.project1.dto.request.RegisterRequestDTO;
+
 import lombok.Getter;
 import lombok.Setter;
 
@@ -46,13 +48,13 @@ public class User {
     private Date updatedAt;
 
     // Constructor
-    public User(String name, String email, String password, String gender, Date birth, String pic) {
-        this.name = name;
-        this.email = email;
-        this.password = password;
-        this.gender = gender;
+    public User(RegisterRequestDTO registerRequestDTO) {
+        this.name = registerRequestDTO.getName();
+        this.email = registerRequestDTO.getEmail();
+        this.password = registerRequestDTO.getPassword();
+        this.gender = registerRequestDTO.getGender();
         this.birth = new Date(2003, 10, 29); // Default value: 29/11/2003
-        this.pic = pic;
+        this.pic = "avatar_default.png";
         this.isAdmin = false;
         this.isBan = false;
         this.verified = false;

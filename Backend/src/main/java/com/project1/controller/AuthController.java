@@ -15,6 +15,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import com.project1.dto.request.LoginRequestDTO;
+import com.project1.dto.request.RegisterRequestDTO;
 import com.project1.dto.response.LoginResponeDTO;
 import com.project1.dto.response.ResponseData;
 import com.project1.service.AuthService;
@@ -36,8 +37,6 @@ public class AuthController {
     public ResponseEntity<ResponseData<LoginResponeDTO>> login(@Valid @RequestBody LoginRequestDTO loginRequestDTO,
             HttpServletResponse response) {
 
-        log.info("response: {}", response);
-
         Optional<LoginResponeDTO> optionalLoginResponeDTO = authService.login(loginRequestDTO.getEmail(),
                 loginRequestDTO.getPassword(), response);
 
@@ -49,6 +48,25 @@ public class AuthController {
         } else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(new ResponseData<>(HttpStatus.UNAUTHORIZED.value(), "Tài khoản hoặc mật khẩu không đúng!"));
+        }
+    }
+
+    @Operation(summary = "Register")
+    @PostMapping(value = "/register")
+    public ResponseEntity<ResponseData<LoginResponeDTO>> register(
+            @Valid @RequestBody RegisterRequestDTO registerRequestDTO,
+            HttpServletResponse response) {
+
+        Optional<LoginResponeDTO> optionalLoginResponeDTO = authService.register(registerRequestDTO, response);
+
+        if (optionalLoginResponeDTO.isPresent()) {
+            LoginResponeDTO loginResponeDTO = optionalLoginResponeDTO.get();
+
+            return ResponseEntity.status(HttpStatus.OK)
+                    .body(new ResponseData<>(HttpStatus.OK.value(), "Đăng ký thành công!", loginResponeDTO));
+        } else {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ResponseData<>(HttpStatus.UNAUTHORIZED.value(), "Email đã tồn tại!"));
         }
     }
 

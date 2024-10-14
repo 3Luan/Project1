@@ -14,6 +14,7 @@ import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import com.project1.dto.request.RegisterRequestDTO;
 import com.project1.dto.response.LoginResponeDTO;
 import com.project1.model.User;
 import com.project1.repository.UserRepository;
@@ -115,6 +116,37 @@ public class AuthService {
         }
 
         return Optional.empty(); // Trả về empty nếu không tìm thấy hoặc password sai
+    }
+
+    // Register
+    public Optional<LoginResponeDTO> register(RegisterRequestDTO registerRequestDTO, HttpServletResponse response) {
+        // Kiểm tra xem người dùng đã tồn tại hay chưa
+        Optional<User> optionalUser = userRepository.findByEmail(registerRequestDTO.getEmail());
+
+        if (optionalUser.isPresent()) {
+            return Optional.empty(); // Người dùng đã tồn tại
+        }
+
+        // Tạo người dùng mới
+        User user = new User(registerRequestDTO);
+        user.setEmail(registerRequestDTO.getEmail());
+        user.setPassword(registerRequestDTO.getPassword()); // Chú ý mã hóa mật khẩu trước khi lưu
+        // Cài đặt các thuộc tính khác nếu cần
+        userRepository.save(user); // Lưu người dùng vào cơ sở dữ liệu
+
+        // Tạo token cho người dùng mới
+        var token = generateToken(user.getId());
+
+        // Lưu token vào cookie
+        Cookie cookie = new Cookie("token", token);
+        cookie.setHttpOnly(true); // Bảo vệ cookie khỏi JavaScript
+        cookie.setSecure(true); // Chỉ gửi qua HTTPS
+        cookie.setPath("/"); // Cookie sẽ có hiệu lực cho toàn bộ ứng dụng
+        cookie.setMaxAge(30 * 24 * 60 * 60); // 30 ngày tính bằng giây
+        response.addCookie(cookie); // Thêm cookie vào phản hồi
+
+        LoginResponeDTO loginResponeDTO = new LoginResponeDTO(user);
+        return Optional.of(loginResponeDTO);
     }
 
     // Refresh

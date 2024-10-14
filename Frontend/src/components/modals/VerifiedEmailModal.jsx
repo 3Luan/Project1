@@ -45,21 +45,17 @@ const VerifiedEmailModal = ({
   const onclickVerify = async () => {
     if (code && name && email && password && gender && birth) {
       setIsLoading(true);
-      const data = await verifyCodeAPI(
-        code,
-        name,
-        email,
-        password,
-        gender,
-        birth
-      );
-      if (data?.code === 0) {
+
+      let data;
+      try {
+        data = await verifyCodeAPI(code, name, email, password, gender, birth);
         toast.success(data?.message);
         navigate("/");
         dispatch(handleRefresh());
-      } else if (data?.code === 1) {
+      } catch (error) {
         toast.error(data?.message);
       }
+
       setIsLoading(false);
     } else {
       toast.error("Không được bỏ trống");

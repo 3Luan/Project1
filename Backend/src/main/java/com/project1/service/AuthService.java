@@ -1,5 +1,6 @@
 package com.project1.service;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -15,9 +16,14 @@ import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.project1.dto.request.RegisterRequestDTO;
+import com.project1.dto.request.VerifyCodeAndRegisterRequestDTO;
 import com.project1.dto.response.LoginResponeDTO;
+import com.project1.dto.response.ResponseData;
 import com.project1.model.User;
+import com.project1.model.VerificationCode;
 import com.project1.repository.UserRepository;
+import com.project1.repository.VerificationCodeRepository;
+import com.project1.util.EmailService;
 
 import lombok.extern.slf4j.Slf4j;
 import jakarta.servlet.http.Cookie;
@@ -26,6 +32,7 @@ import java.util.*;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 
 @Slf4j
 @Service
@@ -33,6 +40,9 @@ public class AuthService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private VerificationCodeRepository verificationCodeRepository;
 
     @Value("${jwt.secret}")
     private String SECRET_KEY;
@@ -119,23 +129,82 @@ public class AuthService {
     }
 
     // Register
-    public Optional<LoginResponeDTO> register(RegisterRequestDTO registerRequestDTO, HttpServletResponse response) {
+    public ResponseData<LoginResponeDTO> register(RegisterRequestDTO registerRequestDTO,
+            HttpServletResponse response) {
         // Kiểm tra xem người dùng đã tồn tại hay chưa
         Optional<User> optionalUser = userRepository.findByEmail(registerRequestDTO.getEmail());
 
         if (optionalUser.isPresent()) {
-            return Optional.empty(); // Người dùng đã tồn tại
+            // Người dùng đã tồn tại
+            return new ResponseData<LoginResponeDTO>(HttpStatus.CONFLICT.value(), "Email đã tồn tại!", null);
         }
 
+        // Xóa mã xác thực cũ nếu có
+        verificationCodeRepository.deleteByEmail(registerRequestDTO.getEmail());
+
+        // Tạo mã xác thực
+        String verificationCode = generateVerificationCode();
+        VerificationCode verificatioCode = new VerificationCode(registerRequestDTO.getEmail(), verificationCode);
+        verificationCodeRepository.save(verificatioCode); // Lưu mã xác thực vào cơ sở dữ liệu
+
+        // Gửi mã xác thực qua email
+        new EmailService().sendVerificationEmail(registerRequestDTO.getEmail(), verificationCode);
+
+        return new ResponseData<LoginResponeDTO>(HttpStatus.OK.value(), "Vui lòng kiểm tra email để nhận mã xác thực!",
+                null);
+
+    }
+
+    // Hàm tạo mã xác thực ngẫu nhiên
+    private String generateVerificationCode() {
+        return RandomStringUtils.randomAlphanumeric(6).toUpperCase(); // Tạo mã 6 ký tự ngẫu nhiên
+    }
+
+    public ResponseData<LoginResponeDTO> verifyCode(VerifyCodeAndRegisterRequestDTO verifyCodeAndRegisterRequestDTO,
+            HttpServletResponse response) {
+        // Kiểm tra thông tin đầu vào
+        if (verifyCodeAndRegisterRequestDTO.getCode() == "" || verifyCodeAndRegisterRequestDTO.getEmail() == "" ||
+                verifyCodeAndRegisterRequestDTO.getName() == "" || verifyCodeAndRegisterRequestDTO.getPassword() == ""
+                || verifyCodeAndRegisterRequestDTO.getGender() == "") {
+            return new ResponseData<LoginResponeDTO>(HttpStatus.BAD_REQUEST.value(), "Thông tin không đủ!",
+                    null);
+        }
+
+        // Kiểm tra xem người dùng đã tồn tại chưa
+        Optional<User> optionalUser = userRepository.findByEmail(verifyCodeAndRegisterRequestDTO.getEmail());
+        if (optionalUser.isPresent()) {
+            // Người dùng đã tồn tại
+            return new ResponseData<LoginResponeDTO>(HttpStatus.CONFLICT.value(), "Email đã tồn tại!", null);
+        }
+
+        // Tìm mã xác thực trong cơ sở dữ liệu
+        VerificationCode verificationCode = verificationCodeRepository
+                .findByEmailAndCode(verifyCodeAndRegisterRequestDTO.getEmail(),
+                        verifyCodeAndRegisterRequestDTO.getCode());
+
+        if (verificationCode == null) {
+            return new ResponseData<LoginResponeDTO>(HttpStatus.UNAUTHORIZED.value(), "Mã xác thực không hợp lệ!",
+                    null);
+        }
+
+        // Kiểm tra xem mã xác thực có hết hạn không
+        long expirationTime = 15 * 60 * 1000; // Thời gian hết hạn (15 phút)
+        long codeTime = verificationCode.getCreatedAt().getTime();
+        if (System.currentTimeMillis() - codeTime > expirationTime) {
+            return new ResponseData<LoginResponeDTO>(HttpStatus.BAD_REQUEST.value(), "Mã xác thực đã hết hạn!", null);
+        }
+
+        // Mã hóa mật khẩu
+        String hashedPassword = new BCryptPasswordEncoder().encode(verifyCodeAndRegisterRequestDTO.getPassword());
+
         // Tạo người dùng mới
-        User user = new User(registerRequestDTO);
-        user.setEmail(registerRequestDTO.getEmail());
-        user.setPassword(registerRequestDTO.getPassword()); // Chú ý mã hóa mật khẩu trước khi lưu
-        // Cài đặt các thuộc tính khác nếu cần
-        userRepository.save(user); // Lưu người dùng vào cơ sở dữ liệu
+        User newUser = new User(verifyCodeAndRegisterRequestDTO.getName(), verifyCodeAndRegisterRequestDTO.getEmail(),
+                hashedPassword,
+                verifyCodeAndRegisterRequestDTO.getGender());
+        userRepository.save(newUser);
 
         // Tạo token cho người dùng mới
-        var token = generateToken(user.getId());
+        var token = generateToken(newUser.getId());
 
         // Lưu token vào cookie
         Cookie cookie = new Cookie("token", token);
@@ -145,8 +214,12 @@ public class AuthService {
         cookie.setMaxAge(30 * 24 * 60 * 60); // 30 ngày tính bằng giây
         response.addCookie(cookie); // Thêm cookie vào phản hồi
 
-        LoginResponeDTO loginResponeDTO = new LoginResponeDTO(user);
-        return Optional.of(loginResponeDTO);
+        // Xóa mã xác thực sau khi đã sử dụng
+        verificationCodeRepository.delete(verificationCode);
+
+        LoginResponeDTO loginResponeDTO = new LoginResponeDTO(newUser);
+
+        return new ResponseData<LoginResponeDTO>(HttpStatus.OK.value(), "Đăng ký thành công!", loginResponeDTO);
     }
 
     // Refresh

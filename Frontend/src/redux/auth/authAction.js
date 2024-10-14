@@ -24,24 +24,20 @@ import {
 
 export const handleRegister = (name, email, password) => {
   return async (dispatch, getState) => {
-    dispatch(register());
+    try {
+      dispatch(register());
 
-    let res = await registerAPI(name, email, password);
+      let res = await registerAPI(name, email, password);
 
-    if (res) {
-      if (res.code === 0) {
-        // Đăng ký thành công
-        toast.success(res.message);
-        dispatch(registerSuccess(res));
-      } else if (res.code === 1) {
-        // Đăng ký thất bại
-        toast.error(res.message);
-        dispatch(registerError());
-      }
-    } else {
+      console.log("res: ", res);
+
+      // Đăng ký thành công
+      dispatch(registerSuccess(res?.data?.user));
+      toast.success(res.message);
+    } catch (error) {
       // Đăng ký thất bại
-      toast.error("Error: Đăng ký");
       dispatch(registerError());
+      toast.error(error?.response?.data?.message);
     }
   };
 };
@@ -73,11 +69,11 @@ export const handleRefresh = (email, password) => {
 
       // Refresh thành công
       dispatch(refreshSuccess(res?.data?.user));
-      toast.success(res.message);
+      // toast.success(res.message);
     } catch (error) {
       // Refresh thất bại
       dispatch(refreshError());
-      toast.error(error?.response?.data?.message);
+      // toast.error(error?.response?.data?.message);
     }
   };
 };

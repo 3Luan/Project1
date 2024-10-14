@@ -4,6 +4,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.mongodb.config.EnableMongoAuditing;
 
 @Configuration
-@EnableMongoAuditing
+@EnableMongoAuditing // Bật auditing để sử dụng @CreatedDate
 public class MongoConfig {
+
 }

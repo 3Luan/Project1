@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.project1.dto.request.LoginRequestDTO;
 import com.project1.dto.request.RegisterRequestDTO;
+import com.project1.dto.request.VerifyCodeAndRegisterRequestDTO;
 import com.project1.dto.response.LoginResponeDTO;
 import com.project1.dto.response.ResponseData;
 import com.project1.service.AuthService;
@@ -56,17 +57,33 @@ public class AuthController {
     public ResponseEntity<ResponseData<LoginResponeDTO>> register(
             @Valid @RequestBody RegisterRequestDTO registerRequestDTO,
             HttpServletResponse response) {
+        ResponseData<LoginResponeDTO> responseData = authService.register(registerRequestDTO, response);
 
-        Optional<LoginResponeDTO> optionalLoginResponeDTO = authService.register(registerRequestDTO, response);
-
-        if (optionalLoginResponeDTO.isPresent()) {
-            LoginResponeDTO loginResponeDTO = optionalLoginResponeDTO.get();
-
+        if (responseData.getData() != null) {
             return ResponseEntity.status(HttpStatus.OK)
-                    .body(new ResponseData<>(HttpStatus.OK.value(), "Đăng ký thành công!", loginResponeDTO));
+                    .body(new ResponseData<>(HttpStatus.OK.value(), responseData.getMessage(),
+                            responseData.getData()));
         } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(new ResponseData<>(HttpStatus.UNAUTHORIZED.value(), "Email đã tồn tại!"));
+            return ResponseEntity.status(responseData.getStatus())
+                    .body(new ResponseData<>(responseData.getStatus(), responseData.getMessage()));
+        }
+    }
+
+    @Operation(summary = "VerifyCode")
+    @PostMapping(value = "/verifyCode")
+    public ResponseEntity<ResponseData<LoginResponeDTO>> verifyCode(
+            @Valid @RequestBody VerifyCodeAndRegisterRequestDTO verifyCodeAndRegisterRequestDTO,
+            HttpServletResponse response) {
+        ResponseData<LoginResponeDTO> responseData = authService.verifyCode(verifyCodeAndRegisterRequestDTO,
+                response);
+
+        if (responseData.getData() != null) {
+            return ResponseEntity.status(HttpStatus.OK)
+                    .body(new ResponseData<>(HttpStatus.OK.value(), responseData.getMessage(),
+                            responseData.getData()));
+        } else {
+            return ResponseEntity.status(responseData.getStatus())
+                    .body(new ResponseData<>(responseData.getStatus(), responseData.getMessage()));
         }
     }
 
@@ -104,30 +121,4 @@ public class AuthController {
                     .body(new ResponseData<>(HttpStatus.UNAUTHORIZED.value(), "Đăng nhập hết hạn!"));
         }
     }
-
-    // @Operation(summary = "Register")
-    // @PostMapping(value = "/register")
-    // public ResponseEntity<ResponseData<User>> register(@Valid @RequestBody
-    // RegisterRequestDTO registerRequestDTO) {
-
-    // Optional<User> optionalUser =
-    // authService.login(registerRequestDTO.getEmail(),
-    // registerRequestDTO.getPassword());
-
-    // if (optionalUser.isPresent()) {
-    // User user = optionalUser.get();
-
-    // // return ResponseEntity.ok(new ResponseData<>(HttpStatus.OK.value(), "Đăng
-    // nhập
-    // // thành công", "JWT_TOKEN"));
-    // return ResponseEntity.status(HttpStatus.OK)
-    // .body(new ResponseData<>(HttpStatus.OK.value(), "Đăng nhập thành công!",
-    // user));
-    // } else {
-    // return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-    // .body(new ResponseData<>(HttpStatus.UNAUTHORIZED.value(), "Tài khoản hoặc mật
-    // khẩu không đúng!"));
-    // }
-
-    // }
 }

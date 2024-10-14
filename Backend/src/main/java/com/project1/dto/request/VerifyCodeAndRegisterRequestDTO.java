@@ -12,8 +12,7 @@ import jakarta.validation.constraints.NotBlank;
 @Getter
 @Setter
 @NoArgsConstructor
-public class RegisterRequestDTO implements Serializable {
-
+public class VerifyCodeAndRegisterRequestDTO implements Serializable {
     @Email(message = "Email không hợp lệ")
     @NotBlank(message = "Email không được bỏ trống")
     private String email;
@@ -26,4 +25,7 @@ public class RegisterRequestDTO implements Serializable {
 
     @NotBlank(message = "Giới tính không được bỏ trống")
     private String gender;
+
+    @NotBlank(message = "Code không được bỏ trống")
+    private String code;
 }

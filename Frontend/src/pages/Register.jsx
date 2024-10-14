@@ -67,13 +67,15 @@ const Register = () => {
 
         // Gọi API đăng ký
         setIsLoading(true);
-        const data = await registerAPI(name, email, password, gender, birth);
-        if (data?.code === 0) {
+        let data;
+        try {
+          data = await registerAPI(name, email, password, gender, birth);
           toast.success(data?.message);
           setOpenModal(true);
-        } else if (data?.code === 1) {
+        } catch (error) {
           toast.error(data?.message);
         }
+
         setIsLoading(false);
       } else {
         toast.error("Email không đúng định dạng");

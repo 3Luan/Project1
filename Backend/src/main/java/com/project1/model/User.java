@@ -46,6 +46,9 @@ public class User {
     private Date updatedAt;
 
     // Constructor
+    public User() {
+    }
+
     public User(String name, String email, String password, String gender) {
         this.name = name;
         this.email = email;
@@ -53,6 +56,21 @@ public class User {
         this.gender = gender;
         this.birth = new Date(2003, 10, 29); // Default value: 29/11/2003
         this.pic = "avatar_default.png";
+        this.isAdmin = false;
+        this.isBan = false;
+        this.verified = false;
+        this.followings = new ArrayList<>();
+        this.followers = new ArrayList<>();
+        this.postsSaved = new ArrayList<>();
+    }
+
+    public User(String name, String email, String pic) {
+        this.name = name;
+        this.email = email;
+        this.password = null;
+        this.gender = "male";
+        this.birth = new Date(2003, 10, 29); // Default value: 29/11/2003
+        this.pic = pic;
         this.isAdmin = false;
         this.isBan = false;
         this.verified = false;

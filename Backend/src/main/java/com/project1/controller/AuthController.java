@@ -11,8 +11,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.view.RedirectView;
 
 import com.project1.dto.request.LoginRequestDTO;
 import com.project1.dto.request.RegisterRequestDTO;
@@ -21,6 +24,7 @@ import com.project1.dto.response.LoginResponeDTO;
 import com.project1.dto.response.ResponseData;
 import com.project1.service.AuthService;
 
+import java.security.Principal;
 import java.util.*;;
 
 @RestController
@@ -132,5 +136,16 @@ public class AuthController {
         return ResponseEntity.status(responseData.getStatus())
                 .body(new ResponseData<>(responseData.getStatus(), responseData.getMessage()));
 
+    }
+
+    @GetMapping("/loginGoogle")
+    public RedirectView loginGoogle(@AuthenticationPrincipal OAuth2User principal,
+            HttpServletResponse response) {
+        authService.loginGoogle(response,
+                principal);
+
+        RedirectView redirectView = new RedirectView();
+        redirectView.setUrl("http://localhost:3000");
+        return redirectView;
     }
 }

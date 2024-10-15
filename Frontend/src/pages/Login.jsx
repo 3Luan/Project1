@@ -54,7 +54,7 @@ const Login = () => {
 
   const onclickLoginWithGoogle = async () => {
     window.open(
-      `${process.env.REACT_APP_URL_BACKEND}/api/auth/google`,
+      `${process.env.REACT_APP_URL_BACKEND}/oauth2/authorization/google`,
       "_self"
     );
   };

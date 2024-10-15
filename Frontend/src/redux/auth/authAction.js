@@ -29,8 +29,6 @@ export const handleRegister = (name, email, password) => {
 
       let res = await registerAPI(name, email, password);
 
-      console.log("res: ", res);
-
       // Đăng ký thành công
       dispatch(registerSuccess(res?.data?.user));
       toast.success(res.message);
@@ -50,7 +48,7 @@ export const handleLogin = (email, password) => {
       let res = await loginAPI(email, password);
 
       // Đăng nhập thành công
-      dispatch(loginSuccess(res?.data?.user));
+      dispatch(loginSuccess(res?.data));
       toast.success(res.message);
     } catch (error) {
       // Đăng nhập thất bại
@@ -66,14 +64,15 @@ export const handleRefresh = (email, password) => {
       dispatch(refresh());
 
       let res = await refreshAPI();
+      console.log("res", res);
 
       // Refresh thành công
-      dispatch(refreshSuccess(res?.data?.user));
-      // toast.success(res.message);
+      dispatch(refreshSuccess(res?.data));
     } catch (error) {
+      console.log("e", error);
+
       // Refresh thất bại
       dispatch(refreshError());
-      // toast.error(error?.response?.data?.message);
     }
   };
 };

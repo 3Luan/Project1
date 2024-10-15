@@ -4,6 +4,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
 import com.nimbusds.jose.JOSEException;
@@ -121,7 +122,9 @@ public class AuthService {
                 cookie.setMaxAge(30 * 24 * 60 * 60); // 30 ngày tính bằng giây
                 response.addCookie(cookie); // Thêm cookie vào phản hồi
 
-                LoginResponeDTO loginResponeDTO = new LoginResponeDTO(user);
+                LoginResponeDTO loginResponeDTO = new LoginResponeDTO(user.getId(), user.getName(), user.getEmail(),
+                        user.getGender(), user.getPic(), user.isAdmin(), user.isBan(), user.getBirth());
+
                 return Optional.of(loginResponeDTO);
             }
         }
@@ -156,7 +159,7 @@ public class AuthService {
 
     }
 
-    // Hàm tạo mã xác thực ngẫu nhiên
+    // Hàm tạo mã xác thực ngẫu nhiên (Code)
     private String generateVerificationCode() {
         return RandomStringUtils.randomAlphanumeric(6).toUpperCase(); // Tạo mã 6 ký tự ngẫu nhiên
     }
@@ -219,7 +222,8 @@ public class AuthService {
         // Xóa mã xác thực sau khi đã sử dụng
         verificationCodeRepository.delete(verificationCode);
 
-        LoginResponeDTO loginResponeDTO = new LoginResponeDTO(newUser);
+        LoginResponeDTO loginResponeDTO = new LoginResponeDTO(newUser.getId(), newUser.getName(), newUser.getEmail(),
+                newUser.getGender(), newUser.getPic(), newUser.isAdmin(), newUser.isBan(), newUser.getBirth());
 
         return new ResponseData<LoginResponeDTO>(HttpStatus.OK.value(), "Đăng ký thành công!", loginResponeDTO);
     }
@@ -240,7 +244,8 @@ public class AuthService {
                 if (optionalUser.isPresent()) {
                     User user = optionalUser.get();
                     // Thực hiện logic làm mới (refresh)
-                    LoginResponeDTO loginResponeDTO = new LoginResponeDTO(user);
+                    LoginResponeDTO loginResponeDTO = new LoginResponeDTO(user.getId(), user.getName(), user.getEmail(),
+                            user.getGender(), user.getPic(), user.isAdmin(), user.isBan(), user.getBirth());
                     return Optional.of(loginResponeDTO);
                 }
             }
@@ -276,6 +281,58 @@ public class AuthService {
             return new ResponseData<LoginResponeDTO>(HttpStatus.BAD_REQUEST.value(),
                     "Không có phiên đăng nhập nào để đăng xuất.");
         }
+    }
+
+    // Login
+    public ResponseData<LoginResponeDTO> loginGoogle(HttpServletResponse response, OAuth2User principal) {
+
+        if (principal == null) {
+            return new ResponseData<LoginResponeDTO>(HttpStatus.BAD_REQUEST.value(),
+                    "Đăng nhập thất bại.");
+        }
+
+        Optional<User> optionalUser = userRepository.findByEmail(principal.getAttribute("email"));
+
+        if (optionalUser.isPresent()) {
+            User user = optionalUser.get();
+
+            // Tạo token cho người dùng
+            var token = generateToken(user.getId());
+
+            // Lưu token vào cookie
+            Cookie cookie = new Cookie("token", token);
+            cookie.setHttpOnly(true); // Bảo vệ cookie khỏi JavaScript
+            cookie.setSecure(true); // Chỉ gửi qua HTTPS
+            cookie.setPath("/"); // Cookie sẽ có hiệu lực cho toàn bộ ứng dụng
+            cookie.setMaxAge(30 * 24 * 60 * 60); // 30 ngày tính bằng giây
+            response.addCookie(cookie); // Thêm cookie vào phản hồi
+
+            LoginResponeDTO loginResponeDTO = new LoginResponeDTO(user.getId(), user.getName(), user.getEmail(),
+                    user.getGender(), user.getPic(), user.isAdmin(), user.isBan(), user.getBirth());
+
+            return new ResponseData<LoginResponeDTO>(HttpStatus.OK.value(), "Đăng nhập thành công!", loginResponeDTO);
+        }
+
+        // Tạo người dùng mới
+        User newUser = new User(principal.getAttribute("name"), principal.getAttribute("email"),
+                principal.getAttribute("picture"));
+        userRepository.save(newUser);
+
+        // Tạo token cho người dùng mới
+        var token = generateToken(newUser.getId());
+
+        // Lưu token vào cookie
+        Cookie cookie = new Cookie("token", token);
+        cookie.setHttpOnly(true); // Bảo vệ cookie khỏi JavaScript
+        cookie.setSecure(true); // Chỉ gửi qua HTTPS
+        cookie.setPath("/"); // Cookie sẽ có hiệu lực cho toàn bộ ứng dụng
+        cookie.setMaxAge(30 * 24 * 60 * 60); // 30 ngày tính bằng giây
+        response.addCookie(cookie); // Thêm cookie vào phản hồi
+
+        LoginResponeDTO loginResponeDTO = new LoginResponeDTO(newUser.getId(), newUser.getName(), newUser.getEmail(),
+                newUser.getGender(), newUser.getPic(), newUser.isAdmin(), newUser.isBan(), newUser.getBirth());
+
+        return new ResponseData<LoginResponeDTO>(HttpStatus.OK.value(), "Đăng nhập thành công!", loginResponeDTO);
     }
 
 }
